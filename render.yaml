@@ -1,0 +1,12 @@
+services:
+  - type: web
+    name: portal-seguimiento
+    runtime: python
+    plan: free
+    buildCommand: pip install -r requirements.txt
+    startCommand: python server.py
+    healthCheckPath: /api/selftest
+
+databases:
+  - name: portal-seguimiento-db
+    plan: free
