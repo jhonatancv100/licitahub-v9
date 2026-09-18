@@ -148,20 +148,46 @@ def stats():
         deps=c.execute("SELECT department,COUNT(*) n FROM opportunities WHERE source='SEACE' AND department<>'' GROUP BY department ORDER BY n DESC LIMIT 10").fetchall()
     return {"ok":True,"summary":dict(r),"types":[dict(x) for x in types],"departments":[dict(x) for x in deps]}
 def discover_minors():
-    out={"ok":True,"base":MINOR_BASE,"public":MINOR_PUBLIC,"candidates":[]}
-    for u in [MINOR_BASE+"/v3/api-docs",MINOR_BASE+"/swagger-ui/index.html",MINOR_BASE+"/swagger-resources",MINOR_BASE+"/"]:
-        try: out["candidates"].append({"url":u,"ok":True,"sample":get_text(u,12,2_000_000)[:1200]})
-        except Exception as e: out["candidates"].append({"url":u,"ok":False,"error":str(e)[:300]})
-    try:
-        html=get_text(MINOR_PUBLIC,15,3_000_000); scripts=re.findall(r'<script[^>]+src=["\']([^"\']+)',html,re.I); found=set()
-        for s in scripts[-8:]:
+    out={"ok":True,"base":MINOR_BASE,"public":MINOR_PUBLIC,"candidates":[],"importmap":{},"module_matches":{}}
+    # El host devuelve el shell SPA incluso para rutas tipo swagger. Leemos el importmap del shell.
+    shells=[MINOR_PUBLIC,MINOR_BASE+"/",MINOR_BASE+"/v3/api-docs"]
+    html=""
+    for u in shells:
+        try:
+            txt=get_text(u,15,4_000_000)
+            out["candidates"].append({"url":u,"ok":True,"sample":txt[:500]})
+            if "systemjs-importmap" in txt and not html: html=txt
+        except Exception as e:
+            out["candidates"].append({"url":u,"ok":False,"error":str(e)[:300]})
+    if html:
+        m=re.search(r'<script[^>]+type=["\\']systemjs-importmap["\\'][^>]*>(.*?)</script>',html,re.I|re.S)
+        if m:
             try:
-                js=get_text(urllib.parse.urljoin(MINOR_PUBLIC,s),15,4_000_000)
-                for m in re.findall(r'[^"\']*s8uit-services[^"\']*',js):
-                    if len(m)<400: found.add(m)
-            except: pass
-        out["script_matches"]=sorted(found)[:100]
-    except Exception as e: out["script_error"]=str(e)
+                imp=json.loads(m.group(1))
+                imports=imp.get("imports") if isinstance(imp,dict) else {}
+                if isinstance(imports,dict):
+                    out["importmap"]=imports
+                    for name,url in imports.items():
+                        if not isinstance(url,str) or not url.startswith("http"): continue
+                        if "s8uit" not in name.lower() and "s8uit" not in url.lower(): continue
+                        try:
+                            js=get_text(url,20,8_000_000)
+                            matches=set()
+                            patterns=[
+                                r'https?://[^"\\'\\s]{4,300}',
+                                r'/v1/s8uit-services[^"\\'\\s]{0,250}',
+                                r'[/A-Za-z0-9_-]{2,120}(?:contrat|cotiza|invit|public|detalle|buscar|search|listar)[/A-Za-z0-9_?=&.-]{0,180}'
+                            ]
+                            for pat in patterns:
+                                for x in re.findall(pat,js,re.I):
+                                    sx=str(x)
+                                    if ("s8uit" in sx.lower() or any(k in sx.lower() for k in ["contrat","cotiza","invit","detalle","buscar","search","listar"])) and len(sx)<350:
+                                        matches.add(sx)
+                            out["module_matches"][name]=sorted(matches)[:120]
+                        except Exception as e:
+                            out["module_matches"][name]=["ERROR: "+str(e)[:250]]
+            except Exception as e:
+                out["importmap_error"]=str(e)
     return out
 
 class H(BaseHTTPRequestHandler):
