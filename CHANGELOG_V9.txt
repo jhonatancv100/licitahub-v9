@@ -1,0 +1,29 @@
+V9 — PRODUCCIÓN / POSTGRESQL / ALERTAS DE SERVIDOR
+
+1. DATABASE_URL selecciona PostgreSQL automáticamente; sin ella continúa SQLite.
+2. Esquema compatible con PostgreSQL para usuarios, sesiones, estado, caché, locks y correos.
+3. Caché OECE/INFO-8UIT persistida en DB además de archivo local.
+4. Conector INFO-8UIT persistido en DB en producción.
+5. Script de migración SQLite -> PostgreSQL/Supabase.
+6. Sincronización de fuentes en background, configurable por intervalo.
+7. Lease de trabajo en DB para evitar doble scheduler entre instancias.
+8. Evaluación de alertas en servidor aun con navegador cerrado.
+9. Línea base en primera evaluación para no enviar coincidencias históricas masivas.
+10. IDs de alertas prefijados por fuente para evitar colisiones SEACE/MENOR.
+11. Preferencia de alertas por correo por usuario.
+12. Envío SMTP configurable por variables de entorno.
+13. Botón de correo de prueba en Mi perfil.
+14. Registro de envíos/errores de correo en email_log.
+15. Persistencia del frontend por clave modificada; evita sobrescribir estado del servidor.
+16. Metadatos serverSeenIds/serverLastRun preservados en alertas.
+17. Eliminar todas las alertas ya no recrea las alertas predeterminadas.
+18. Cookies Secure automáticas en HTTPS/configuración de producción.
+19. Rate limit básico para login y registro.
+20. Cabeceras de seguridad CSP, HSTS, nosniff, frame deny y referrer policy.
+21. Rutas API de datos requieren sesión.
+22. Base SQLite/server.py/.env/backups quedan bloqueados por HTTP.
+23. Dockerfile, docker-compose, Procfile y ejemplo render.yaml.
+24. Configuración centralizada en .env.example.
+25. Estado del perfil muestra DB, scheduler y SMTP.
+26. PostgreSQL conserva caché aun si el filesystem del hosting es efímero.
+27. start.bat sigue funcionando sin PostgreSQL para uso local.
