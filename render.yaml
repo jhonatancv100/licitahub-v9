@@ -6,7 +6,7 @@ services:
     region: oregon
     autoDeploy: true
     buildCommand: pip install -r requirements.txt
-    startCommand: python v10_bootstrap.py
+    startCommand: python server_v10_1.py
     healthCheckPath: /api/health
     envVars:
       - key: DATABASE_URL
