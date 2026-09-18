@@ -172,7 +172,9 @@ def discover_minors():
                 pass
         out["importmap"]=imports
         for name,url in imports.items():
-            if not isinstance(url,str) or not url.startswith("http"): continue
+            if not isinstance(url,str): continue
+            if url.startswith("//"): url="https:"+url
+            if not url.startswith("http"): continue
             if "s8uit" not in name.lower() and "s8uit" not in url.lower(): continue
             try:
                 js=get_text(url,20,12_000_000)
