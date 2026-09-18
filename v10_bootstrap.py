@@ -26,4 +26,21 @@ with tarfile.open(fileobj=io.BytesIO(archive), mode="r:gz") as tf:
 (ROOT / "app.js").write_bytes((ROOT / "app_v10.js").read_bytes())
 (ROOT / "styles.css").write_bytes((ROOT / "styles_v10.css").read_bytes())
 
+# Migra únicamente la caché de fuentes de versiones anteriores. No toca usuarios,
+# sesiones, seguimiento ni alertas. La V9 tuvo una tabla source_cache con columnas
+# distintas; al ser solo caché pública, es seguro recrearla si su esquema no coincide.
+try:
+    import os, psycopg
+    url = os.getenv("DATABASE_URL", "").strip()
+    if url:
+        with psycopg.connect(url) as c:
+            rows = c.execute("""SELECT column_name FROM information_schema.columns
+                                WHERE table_schema='public' AND table_name='source_cache'""").fetchall()
+            cols = {r[0] for r in rows}
+            if cols and not {"cache_key","payload_json","updated_at"}.issubset(cols):
+                c.execute("DROP TABLE source_cache")
+                c.commit()
+except Exception as exc:
+    print("[v10 migration cache]", exc, flush=True)
+
 runpy.run_path(str(ROOT / "server_v10.py"), run_name="__main__")
