@@ -1,12 +1,25 @@
 services:
   - type: web
-    name: portal-seguimiento
+    name: licitahub-v9
     runtime: python
     plan: free
+    region: oregon
+    autoDeploy: true
     buildCommand: pip install -r requirements.txt
-    startCommand: python server.py
-    healthCheckPath: /api/selftest
-
-databases:
-  - name: portal-seguimiento-db
-    plan: free
+    startCommand: python runner.py
+    healthCheckPath: /api/health
+    envVars:
+      - key: DATABASE_URL
+        fromDatabase:
+          name: licitahub-v9-db
+          property: connectionString
+      - key: HOST
+        value: 0.0.0.0
+      - key: SESSION_SECURE
+        value: "1"
+      - key: BACKGROUND_SYNC_ENABLED
+        value: "1"
+      - key: BACKGROUND_SYNC_INTERVAL
+        value: "900"
+      - key: CACHE_TTL_SECONDS
+        value: "900"
