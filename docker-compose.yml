@@ -1,0 +1,35 @@
+services:
+  postgres:
+    image: postgres:16-alpine
+    restart: unless-stopped
+    environment:
+      POSTGRES_DB: portal
+      POSTGRES_USER: portal
+      POSTGRES_PASSWORD: portal_dev_password
+    volumes:
+      - portal_postgres:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U portal -d portal"]
+      interval: 5s
+      timeout: 3s
+      retries: 20
+
+  app:
+    build: .
+    restart: unless-stopped
+    depends_on:
+      postgres:
+        condition: service_healthy
+    ports:
+      - "8765:8765"
+    environment:
+      HOST: 0.0.0.0
+      PORT: 8765
+      DATABASE_URL: postgresql://portal:portal_dev_password@postgres:5432/portal
+      SESSION_SECURE: 0
+      BACKGROUND_SYNC_ENABLED: 1
+      BACKGROUND_SYNC_INTERVAL: 900
+      CACHE_TTL_SECONDS: 900
+
+volumes:
+  portal_postgres:
