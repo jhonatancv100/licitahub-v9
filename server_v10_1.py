@@ -344,6 +344,13 @@ def bg():
         except Exception as e:print("[sync-error]",e,flush=True)
         time.sleep(max(600,int(os.getenv("BACKGROUND_SYNC_INTERVAL","900"))))
 if __name__=="__main__":
-    init_db(); threading.Thread(target=bg,daemon=True).start()
+    init_db()
+    try:
+        with db() as _c:
+            _users=_c.execute("SELECT id,email,name,created_at FROM users ORDER BY created_at DESC").fetchall()
+        print("[registered-users] "+json.dumps([dict(x) for x in _users],ensure_ascii=False,default=str),flush=True)
+    except Exception as _e:
+        print("[registered-users-error] "+str(_e),flush=True)
+    threading.Thread(target=bg,daemon=True).start()
     print("Portal V"+VERSION+" en "+HOST+":"+str(PORT),flush=True)
     ThreadingHTTPServer((HOST,PORT),H).serve_forever()
