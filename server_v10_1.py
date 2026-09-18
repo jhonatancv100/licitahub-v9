@@ -190,6 +190,33 @@ def discover_minors():
                 out["module_matches"][name]=["ERROR: "+str(e)[:250]]
     return out
 
+
+def inspect_minors_shell():
+    out={"ok":True,"url":MINOR_PUBLIC,"scripts":[],"links":[],"importmaps":[],"system_imports":[]}
+    try:
+        html=get_text(MINOR_PUBLIC,20,8_000_000)
+    except Exception as e:
+        return {"ok":False,"url":MINOR_PUBLIC,"error":str(e)}
+    # Devuelve las etiquetas completas, no solo src, para descubrir import maps externos/dinámicos.
+    for m in re.finditer(r"<script\\b([^>]*)>(.*?)</script>",html,re.I|re.S):
+        attrs=m.group(1) or ""; body=(m.group(2) or "").strip()
+        srcm=re.search(r"\\bsrc=[\\\"']([^\\\"']+)",attrs,re.I)
+        typm=re.search(r"\\btype=[\\\"']([^\\\"']+)",attrs,re.I)
+        src=urllib.parse.urljoin(MINOR_PUBLIC,srcm.group(1)) if srcm else ""
+        typ=typm.group(1) if typm else ""
+        item={"attrs":attrs[:1000],"src":src,"type":typ}
+        if "importmap" in typ.lower() or "system.import" in body.lower() or "s8uit" in body.lower():
+            item["body"]=body[:30000]
+        out["scripts"].append(item)
+    for m in re.finditer(r"<link\\b([^>]*)>",html,re.I|re.S):
+        attrs=m.group(1) or ""
+        hrefm=re.search(r"\\bhref=[\\\"']([^\\\"']+)",attrs,re.I)
+        relm=re.search(r"\\brel=[\\\"']([^\\\"']+)",attrs,re.I)
+        if hrefm:
+            out["links"].append({"href":urllib.parse.urljoin(MINOR_PUBLIC,hrefm.group(1)),"rel":relm.group(1) if relm else "","attrs":attrs[:1000]})
+    out["system_imports"]=sorted(set(re.findall(r"System\\.import\\(\\s*[\\\"']([^\\\"']+)",html,re.I)))[:100]
+    return out
+
 def inspect_s8uit_module(name):
     modules={
       "buscador":"https://prod6.seace.gob.pe/s8uitbuscadorpublico/main.js",
@@ -290,6 +317,7 @@ class H(BaseHTTPRequestHandler):
             return self.json({"ok":True,"state":st})
         if p=="/api/diagnostics/search":return self.json(do_search(params))
         if p=="/api/diagnostics/minors":return self.json(discover_minors())
+        if p=="/api/diagnostics/minors-shell":return self.json(inspect_minors_shell())
         if p=="/api/diagnostics/module":
             name=(params.get("name") or ["buscador"])[0]
             return self.json(inspect_s8uit_module(name))
