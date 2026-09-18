@@ -1,0 +1,10 @@
+__pycache__/
+*.pyc
+*.pyo
+.git/
+.env
+cache/*.json
+data/*.db
+data/*.db-*
+server_v8_backup.py
+index_v8_backup.html
