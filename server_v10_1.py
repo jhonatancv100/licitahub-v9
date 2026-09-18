@@ -190,6 +190,42 @@ def discover_minors():
                 out["module_matches"][name]=["ERROR: "+str(e)[:250]]
     return out
 
+def inspect_s8uit_module(name):
+    modules={
+      "buscador":"https://prod6.seace.gob.pe/s8uitbuscadorpublico/main.js",
+      "menores":"https://prod6.seace.gob.pe/s8uitcontratacionesmenores/main.js",
+      "root":"https://prod6.seace.gob.pe/s8uitContainerApp-root-config.js",
+      "parametro":"https://prod6.seace.gob.pe/s8uitparametro/main.js",
+      "requerimiento":"https://prod6.seace.gob.pe/s8uitrequerimiento/main.js",
+      "cotizacion":"https://prod6.seace.gob.pe/s8uitcotizacion/main.js"
+    }
+    url=modules.get(name)
+    if not url: return {"ok":False,"error":"Módulo inválido"}
+    try:
+        js=get_text(url,25,20_000_000)
+    except Exception as e:
+        return {"ok":False,"url":url,"error":str(e)}
+    keys=["s8uit-services","/v1/","/api/","contrat","cotiza","invit","requer","buscar","search","listar","entidad","ubigeo","region","provincia","distrito","cubso","segmento","item","public"]
+    strings=set()
+    # Extrae literales JS útiles; los bundles suelen conservar rutas HTTP como strings.
+    for pat in [r'"([^"\\]{1,450})"', r"'([^'\\]{1,450})'"]:
+        for s in re.findall(pat,js):
+            ls=s.lower()
+            if any(k in ls for k in keys):
+                strings.add(s)
+    contexts=[]
+    low=js.lower()
+    for key in keys:
+        pos=0
+        hits=0
+        while hits<20:
+            i=low.find(key,pos)
+            if i<0: break
+            a=max(0,i-180); b=min(len(js),i+320)
+            contexts.append(js[a:b])
+            pos=i+len(key); hits+=1
+    return {"ok":True,"name":name,"url":url,"length":len(js),"strings":sorted(strings)[:600],"contexts":contexts[:180]}
+
 class H(BaseHTTPRequestHandler):
     server_version="PortalSeguimiento/10.1"
     def log_message(self,fmt,*args): print(fmt%args,flush=True)
@@ -254,6 +290,9 @@ class H(BaseHTTPRequestHandler):
             return self.json({"ok":True,"state":st})
         if p=="/api/diagnostics/search":return self.json(do_search(params))
         if p=="/api/diagnostics/minors":return self.json(discover_minors())
+        if p=="/api/diagnostics/module":
+            name=(params.get("name") or ["buscador"])[0]
+            return self.json(inspect_s8uit_module(name))
         if p=="/api/diagnostics/sync":
             try:pages=min(60,max(1,int((params.get("pages") or ["10"])[0])))
             except:pages=10
