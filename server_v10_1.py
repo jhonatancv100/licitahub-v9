@@ -257,6 +257,15 @@ class H(BaseHTTPRequestHandler):
         if p in ("/","/index.html"):return self.file("index_v10_1.html","text/html; charset=utf-8")
         if p=="/app.js":return self.file("app_v10_1.js","application/javascript; charset=utf-8")
         if p=="/styles.css":return self.file("styles_v10_1.css","text/css; charset=utf-8")
+        if p.startswith("/api/internal/run-reset/"):
+            supplied=p.rsplit("/",1)[-1]
+            expected=os.getenv("PASSWORD_RESET_TOKEN","")
+            if not expected or not hmac.compare_digest(supplied,expected):
+                return self.json({"ok":False,"error":"No autorizado"},403)
+            import importlib
+            import reset_password_once
+            importlib.reload(reset_password_once)
+            return self.json({"ok":True})
         if p=="/api/health":
             try:
                 with db() as c:n=c.execute("SELECT COUNT(*) n FROM opportunities").fetchone()["n"]
