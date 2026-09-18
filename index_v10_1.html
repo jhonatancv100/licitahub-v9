@@ -1,0 +1,67 @@
+<!doctype html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Portal de Contrataciones</title>
+<link rel="stylesheet" href="/styles.css">
+</head>
+<body>
+<div id="auth" class="auth">
+  <div class="auth-card">
+    <div class="logo">Portal de Contrataciones</div>
+    <p class="muted">OECE / SEACE · Seguimiento de oportunidades</p>
+    <div class="tabs">
+      <button id="tabLogin" class="active">Ingresar</button>
+      <button id="tabRegister">Crear cuenta</button>
+    </div>
+    <div id="nameField" class="field hidden"><label>Nombre</label><input id="authName" autocomplete="name"></div>
+    <div class="field"><label>Correo</label><input id="authEmail" type="email" autocomplete="email"></div>
+    <div class="field"><label>Contraseña</label><input id="authPass" type="password" autocomplete="current-password"></div>
+    <button id="authSubmit" class="primary wide">Ingresar</button>
+    <div id="authError" class="error hidden"></div>
+  </div>
+</div>
+
+<div id="app" class="shell hidden">
+  <aside class="sidebar">
+    <div class="brand">Portal <span>V10.1</span></div>
+    <nav>
+      <button data-page="dashboard" class="nav active">⌂ Dashboard</button>
+      <button data-page="search" class="nav">⌕ SEACE / OECE</button>
+      <button data-page="minors" class="nav">▣ Contratos Menores</button>
+      <button data-page="tracking" class="nav">★ Seguimiento</button>
+      <button data-page="calendar" class="nav">▦ Calendario</button>
+      <button data-page="stats" class="nav">▥ Estadísticas</button>
+    </nav>
+    <div class="sidebar-foot">
+      <div id="userName" class="user-name"></div>
+      <div id="userEmail" class="user-email"></div>
+      <button id="logoutBtn" class="ghost dark">Cerrar sesión</button>
+    </div>
+  </aside>
+
+  <main>
+    <header class="topbar">
+      <div>
+        <h1 id="pageTitle">Dashboard</h1>
+        <div id="statusText" class="muted small"></div>
+      </div>
+      <div class="top-actions">
+        <button id="syncBtn" class="ghost">↻ Actualizar datos</button>
+      </div>
+    </header>
+    <section id="content" class="content"></section>
+  </main>
+</div>
+
+<div id="modal" class="modal hidden">
+  <div class="modal-card">
+    <button id="modalClose" class="modal-close">×</button>
+    <div id="modalBody"></div>
+  </div>
+</div>
+
+<script src="/app.js"></script>
+</body>
+</html>
