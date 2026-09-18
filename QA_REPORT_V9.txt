@@ -1,0 +1,25 @@
+QA V9 — 18/09/2026
+
+PRUEBAS PASADAS
+- Python compila sin errores.
+- JavaScript validado.
+- IDs HTML sin duplicados.
+- SQLite local OK.
+- /api/selftest OK.
+- Registro, login, logout y sesión protegida OK.
+- Cambio de contraseña OK.
+- CSRF OK.
+- Estado por usuario OK.
+- Preferencias de correo OK.
+- Correo sin SMTP falla de forma controlada.
+- Archivos sensibles bloqueados por HTTP.
+- APIs de datos sin sesión: 401.
+- Cabeceras de seguridad presentes.
+- Caché recuperable desde DB.
+- Job lease probado.
+- Alertas servidor con baseline y nuevas coincidencias.
+- Colisiones SEACE/MENOR evitadas.
+- .env soportado.
+- Paquete final sin datos de prueba.
+
+La verificación PostgreSQL end-to-end se realiza durante el despliegue de producción.
