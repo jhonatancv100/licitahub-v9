@@ -21,6 +21,8 @@ start=html.rfind('<script>')
 end=html.rfind('</script>')
 if start >= 0 and end > start:
     js=html[start+8:end]
+    # Corrige un error de sintaxis introducido en el bundle original que anulaba todo el JS.
+    js=js.replace("})ecatch(e){console.error(e)}}", "})}catch(e){console.error(e)}}")
     # Los controles de autenticación se conectan también por addEventListener
     # para no depender de onclick inline.
     js += """
