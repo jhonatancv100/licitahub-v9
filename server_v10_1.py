@@ -160,7 +160,7 @@ def discover_minors():
         except Exception as e:
             out["candidates"].append({"url":u,"ok":False,"error":str(e)[:300]})
     if html:
-        m=re.search(r'<script[^>]+type=["\\']systemjs-importmap["\\'][^>]*>(.*?)</script>',html,re.I|re.S)
+        m=re.search(r"<script[^>]+type=[\"']systemjs-importmap[\"'][^>]*>(.*?)</script>",html,re.I|re.S)
         if m:
             try:
                 imp=json.loads(m.group(1))
@@ -174,8 +174,8 @@ def discover_minors():
                             js=get_text(url,20,8_000_000)
                             matches=set()
                             patterns=[
-                                r'https?://[^"\\'\\s]{4,300}',
-                                r'/v1/s8uit-services[^"\\'\\s]{0,250}',
+                                r"https?://[^\\\"'\\s]{4,300}",
+                                r"/v1/s8uit-services[^\\\"'\\s]{0,250}",
                                 r'[/A-Za-z0-9_-]{2,120}(?:contrat|cotiza|invit|public|detalle|buscar|search|listar)[/A-Za-z0-9_?=&.-]{0,180}'
                             ]
                             for pat in patterns:
