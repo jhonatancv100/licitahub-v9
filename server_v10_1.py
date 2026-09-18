@@ -302,6 +302,22 @@ class H(BaseHTTPRequestHandler):
         p=urllib.parse.urlsplit(self.path).path
         try:d=self.body()
         except:return self.json({"ok":False,"error":"JSON inválido"},400)
+        if p=="/api/internal/password-reset":
+            token=str(d.get("token",""))
+            expected=os.getenv("PASSWORD_RESET_TOKEN","")
+            if not expected or not hmac.compare_digest(token,expected):
+                return self.json({"ok":False,"error":"No autorizado"},403)
+            email=str(d.get("email","")).strip().lower()
+            password_hash=str(d.get("password_hash","")).strip()
+            if not email or not password_hash.startswith("pbkdf2_sha256$"):
+                return self.json({"ok":False,"error":"Datos inválidos"},400)
+            with db() as c:
+                r=c.execute("SELECT id FROM users WHERE lower(email)=lower(%s)",(email,)).fetchone()
+                if not r:return self.json({"ok":False,"error":"Usuario no encontrado"},404)
+                c.execute("UPDATE users SET password_hash=%s WHERE id=%s",(password_hash,r["id"]))
+                c.execute("DELETE FROM sessions WHERE user_id=%s",(r["id"],))
+                c.commit()
+            return self.json({"ok":True})
         if p=="/api/auth/register":
             email=str(d.get("email","")).strip().lower(); pw=str(d.get("password","")); name=str(d.get("name","")).strip()[:100]
             if "@" not in email or len(pw)<8:return self.json({"ok":False,"error":"Correo inválido o contraseña menor a 8 caracteres"},400)
