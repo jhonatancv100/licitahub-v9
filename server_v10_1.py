@@ -148,46 +148,44 @@ def stats():
         deps=c.execute("SELECT department,COUNT(*) n FROM opportunities WHERE source='SEACE' AND department<>'' GROUP BY department ORDER BY n DESC LIMIT 10").fetchall()
     return {"ok":True,"summary":dict(r),"types":[dict(x) for x in types],"departments":[dict(x) for x in deps]}
 def discover_minors():
-    out={"ok":True,"base":MINOR_BASE,"public":MINOR_PUBLIC,"candidates":[],"importmap":{},"module_matches":{}}
-    # El host devuelve el shell SPA incluso para rutas tipo swagger. Leemos el importmap del shell.
+    out={"ok":True,"base":MINOR_BASE,"public":MINOR_PUBLIC,"candidates":[],"importmap":{},"module_matches":{},"scripts":[],"html_urls":[]}
     shells=[MINOR_PUBLIC,MINOR_BASE+"/",MINOR_BASE+"/v3/api-docs"]
     html=""
     for u in shells:
         try:
-            txt=get_text(u,15,4_000_000)
+            txt=get_text(u,15,5_000_000)
             out["candidates"].append({"url":u,"ok":True,"sample":txt[:500]})
             if "systemjs-importmap" in txt and not html: html=txt
         except Exception as e:
             out["candidates"].append({"url":u,"ok":False,"error":str(e)[:300]})
     if html:
-        m=re.search(r"<script[^>]+type=[\"']systemjs-importmap[\"'][^>]*>(.*?)</script>",html,re.I|re.S)
-        if m:
+        out["scripts"]=re.findall(r"<script[^>]+src=[\\\"']([^\\\"']+)",html,re.I)[:100]
+        out["html_urls"]=sorted(set(re.findall(r"https?://[^\\\"'<>\\s]+",html)))[:200]
+        maps=re.findall(r"<script[^>]+type=[\\\"']systemjs-importmap[\\\"'][^>]*>(.*?)</script>",html,re.I|re.S)
+        imports={}
+        for raw in maps:
             try:
-                imp=json.loads(m.group(1))
-                imports=imp.get("imports") if isinstance(imp,dict) else {}
-                if isinstance(imports,dict):
-                    out["importmap"]=imports
-                    for name,url in imports.items():
-                        if not isinstance(url,str) or not url.startswith("http"): continue
-                        if "s8uit" not in name.lower() and "s8uit" not in url.lower(): continue
-                        try:
-                            js=get_text(url,20,8_000_000)
-                            matches=set()
-                            patterns=[
-                                r"https?://[^\\\"'\\s]{4,300}",
-                                r"/v1/s8uit-services[^\\\"'\\s]{0,250}",
-                                r'[/A-Za-z0-9_-]{2,120}(?:contrat|cotiza|invit|public|detalle|buscar|search|listar)[/A-Za-z0-9_?=&.-]{0,180}'
-                            ]
-                            for pat in patterns:
-                                for x in re.findall(pat,js,re.I):
-                                    sx=str(x)
-                                    if ("s8uit" in sx.lower() or any(k in sx.lower() for k in ["contrat","cotiza","invit","detalle","buscar","search","listar"])) and len(sx)<350:
-                                        matches.add(sx)
-                            out["module_matches"][name]=sorted(matches)[:120]
-                        except Exception as e:
-                            out["module_matches"][name]=["ERROR: "+str(e)[:250]]
+                imp=json.loads(raw)
+                vals=imp.get("imports") if isinstance(imp,dict) else {}
+                if isinstance(vals,dict): imports.update(vals)
+            except Exception:
+                pass
+        out["importmap"]=imports
+        for name,url in imports.items():
+            if not isinstance(url,str) or not url.startswith("http"): continue
+            if "s8uit" not in name.lower() and "s8uit" not in url.lower(): continue
+            try:
+                js=get_text(url,20,12_000_000)
+                matches=set()
+                for x in re.findall(r"https?://[^\\\"'\\s)]+",js,re.I):
+                    if len(x)<400: matches.add(x)
+                for x in re.findall(r"/[A-Za-z0-9_./?=&%-]{3,300}",js):
+                    lx=x.lower()
+                    if any(k in lx for k in ["s8uit","contrat","cotiza","invit","detalle","buscar","search","listar","public"]):
+                        matches.add(x)
+                out["module_matches"][name]=sorted(matches)[:250]
             except Exception as e:
-                out["importmap_error"]=str(e)
+                out["module_matches"][name]=["ERROR: "+str(e)[:250]]
     return out
 
 class H(BaseHTTPRequestHandler):
